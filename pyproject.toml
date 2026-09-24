@@ -1,0 +1,25 @@
+[project]
+name = "ai-school-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Habib Ur Rehman", email = "habibrehman96@outlook.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "langchain>=1.4.2",
+    "langchain-google-genai>=4.4.0",
+    "langgraph>=1.2.12",
+    "python-dotenv>=1.2.3",
+    "uvicorn>=0.53.0",
+]
+
+[project.scripts]
+ai-school-agent = "ai_school_agent:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
