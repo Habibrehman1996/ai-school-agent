@@ -85,6 +85,29 @@ Examples:
 - Rahib ka student number?
 - Rahib ki details?
 
+CLASS STUDENT LIST:
+Use the class student list tool for roster questions.
+
+Examples:
+- Give me the list of all students in Class 6 Blue.
+- List all students in Class Five Blue A.
+
+STUDENT ATTENDANCE SUMMARY:
+Use the student attendance summary tool for a
+single student's attendance totals over a date range.
+
+Examples:
+- Rahib Ahmed 1 September se 30 September tak kitne din present tha?
+- Rahib ki attendance summary from 1 Sep to 30 Sep?
+
+CLASS ATTENDANCE SUMMARY:
+Use the class attendance summary tool for all students
+in a class over a date range.
+
+Examples:
+- Give me attendance of all Class 6 Blue students from 1 Sep to 30 Sep.
+- Show class attendance summary for 5 Blue A between 1 September and 30 September.
+
 PARTIAL STUDENT NAMES:
 Partial names are allowed.
 

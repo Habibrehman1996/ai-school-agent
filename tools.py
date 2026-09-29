@@ -2,7 +2,10 @@ from langchain.tools import tool
 
 from edap_client import (
     get_class_attendance,
+    get_class_attendance_summary,
+    get_class_student_list,
     get_student_attendance,
+    get_student_attendance_summary,
     get_student_details,
 )
 
@@ -137,6 +140,94 @@ async def get_student_details_tool(
 
 
 # =========================================================
+# CLASS STUDENT LIST TOOL
+# =========================================================
+
+@tool
+async def get_class_student_list_tool(
+    course_name: str,
+    section_name: str,
+    date_text: str = "today",
+) -> dict:
+    """
+    Given a class and section, return the complete list
+    of students in that class.
+
+    Use this tool for questions such as:
+    - Give me the list of all students in Class 6 Blue.
+    - Show me the student roster for 5 Blue A.
+    - List all students in Class Five A.
+    """
+
+    return await get_class_student_list(
+        course_name=course_name,
+        section_name=section_name,
+        date_text=date_text,
+    )
+
+
+# =========================================================
+# STUDENT ATTENDANCE SUMMARY TOOL
+# =========================================================
+
+@tool
+async def get_student_attendance_summary_tool(
+    student_name: str,
+    course_name: str,
+    section_name: str,
+    start_date: str,
+    end_date: str,
+) -> dict:
+    """
+    Given a student, class, section and date range,
+    return total school days, present days, absent days,
+    tardy days, and attendance percentage.
+
+    Use this tool for questions such as:
+    - How many days was Rahib Ahmed present and absent from 1 Sep to 30 Sep?
+    - Rahib ki attendance summary from 1 September 2026 to 30 September 2026?
+    - Was Rahib absent or late in Class Five Blue A between given dates?
+    """
+
+    return await get_student_attendance_summary(
+        student_name=student_name,
+        course_name=course_name,
+        section_name=section_name,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+# =========================================================
+# CLASS ATTENDANCE SUMMARY TOOL
+# =========================================================
+
+@tool
+async def get_class_attendance_summary_tool(
+    course_name: str,
+    section_name: str,
+    start_date: str,
+    end_date: str,
+) -> dict:
+    """
+    Given a class and section, return attendance summary
+    for all students in that class across the date range.
+
+    Use this tool for questions such as:
+    - Give me the attendance of all Class 6 Blue students from 1 Sep to 30 Sep.
+    - Show class attendance summary for 5 Blue A between 1 September 2026 and 30 September 2026.
+    - Summarize attendance for all students in Class 5 Blue A.
+    """
+
+    return await get_class_attendance_summary(
+        course_name=course_name,
+        section_name=section_name,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+# =========================================================
 # ALL TOOLS
 # =========================================================
 
@@ -144,4 +235,7 @@ tools = [
     get_attendance_tool,
     get_student_attendance_tool,
     get_student_details_tool,
+    get_class_student_list_tool,
+    get_student_attendance_summary_tool,
+    get_class_attendance_summary_tool,
 ]

@@ -511,6 +511,388 @@ async def find_student_on_date(
 
 
 # =========================================================
+# CLASS STUDENT LIST
+# =========================================================
+
+async def get_class_student_list(
+    course_name: str,
+    section_name: str,
+    date_text: str = "today",
+):
+    """
+    A class/section ka full roster retrieve karta hai.
+    """
+
+    courses = await get_courses_and_sections()
+
+    result = find_course_section(
+        courses,
+        course_name,
+        section_name,
+    )
+
+    if result is None:
+
+        return {
+            "success": False,
+            "message": (
+                f"Class '{course_name}' "
+                f"ya section '{section_name}' nahi mila."
+            ),
+        }
+
+    course_id, section_id = result
+
+    try:
+
+        edap_date = format_edap_date(
+            date_text
+        )
+
+    except ValueError as e:
+
+        return {
+            "success": False,
+            "message": str(e),
+        }
+
+    data = await get_attendance(
+        course_id=course_id,
+        section_id=section_id,
+        date=edap_date,
+    )
+
+    attendance_data = data.get(
+        "Data",
+        {}
+    )
+
+    if attendance_data.get(
+        "isholiday"
+    ):
+
+        return {
+            "success": False,
+            "holiday": True,
+            "message": (
+                f"{edap_date} ko school holiday hai."
+            ),
+        }
+
+    students_by_key = {}
+
+    for activity in attendance_data.get(
+        "AttendanceActivity",
+        [],
+    ):
+
+        status = activity.get(
+            "stxt",
+            "",
+        )
+
+        for student in activity.get(
+            "AttendanceDetail",
+            [],
+        ):
+
+            raw_name = (student.get("name") or "").strip()
+
+            if not raw_name:
+                continue
+
+            key = str(
+                student.get("Id")
+                or student.get("studentno")
+                or raw_name
+            )
+
+            if key not in students_by_key:
+
+                students_by_key[key] = {
+                    "name": raw_name,
+                    "student_no": student.get("studentno"),
+                    "gr_no": student.get("grno"),
+                    "status": status,
+                }
+
+    students = sorted(
+        students_by_key.values(),
+        key=lambda item: item["name"].lower(),
+    )
+
+    return {
+        "success": True,
+        "date": edap_date,
+        "class": course_name,
+        "section": section_name,
+        "total_students": len(students),
+        "students": students,
+    }
+
+
+# =========================================================
+# STUDENT ATTENDANCE SUMMARY
+# =========================================================
+
+async def get_student_attendance_summary(
+    student_name: str,
+    course_name: str,
+    section_name: str,
+    start_date: str,
+    end_date: str,
+):
+    """
+    Ek student ki date-range attendance summary.
+    """
+
+    result = await get_student_attendance(
+        student_name=student_name,
+        course_name=course_name,
+        section_name=section_name,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    if not result.get("success"):
+        return result
+
+    tardy_days = result.get("late", 0)
+
+    return {
+        "success": True,
+        "student": result.get("student"),
+        "class": result.get("class"),
+        "section": result.get("section"),
+        "start_date": start_date,
+        "end_date": end_date,
+        "total_school_days": result.get(
+            "school_days_recorded",
+            0,
+        ),
+        "present_days": result.get("present", 0),
+        "absent_days": result.get("absent", 0),
+        "tardy_days": tardy_days,
+        "late_days": tardy_days,
+        "attendance_percentage": result.get(
+            "attendance_percentage",
+        ),
+        "records": result.get("records", []),
+    }
+
+
+# =========================================================
+# CLASS ATTENDANCE SUMMARY
+# =========================================================
+
+async def get_class_attendance_summary(
+    course_name: str,
+    section_name: str,
+    start_date: str,
+    end_date: str,
+):
+    """
+    A given class/section ke sab students ki
+    date-range attendance summary return karta hai.
+    """
+
+    courses = await get_courses_and_sections()
+
+    result = find_course_section(
+        courses,
+        course_name,
+        section_name,
+    )
+
+    if result is None:
+
+        return {
+            "success": False,
+            "message": (
+                f"Class '{course_name}' "
+                f"ya section '{section_name}' nahi mila."
+            ),
+        }
+
+    course_id, section_id = result
+
+    try:
+
+        start = datetime.strptime(
+            start_date.strip(),
+            "%d %B %Y",
+        )
+
+        end = datetime.strptime(
+            end_date.strip(),
+            "%d %B %Y",
+        )
+
+    except ValueError:
+
+        return {
+            "success": False,
+            "message": (
+                "Date format example: "
+                "1 September 2026"
+            ),
+        }
+
+    if start > end:
+
+        return {
+            "success": False,
+            "message": (
+                "Start date end date se "
+                "pehle honi chahiye."
+            ),
+        }
+
+    student_summary = {}
+    school_days = 0
+
+    current_date = start
+
+    while current_date <= end:
+
+        date_text = current_date.strftime(
+            "%d-%b-%Y"
+        )
+
+        try:
+
+            data = await get_attendance(
+                course_id=course_id,
+                section_id=section_id,
+                date=date_text,
+            )
+
+            attendance_data = data.get(
+                "Data",
+                {}
+            )
+
+            if attendance_data.get(
+                "isholiday"
+            ):
+
+                current_date += timedelta(
+                    days=1
+                )
+
+                continue
+
+            school_days += 1
+
+            for activity in attendance_data.get(
+                "AttendanceActivity",
+                [],
+            ):
+
+                status = activity.get(
+                    "stxt",
+                    "",
+                )
+
+                for student in activity.get(
+                    "AttendanceDetail",
+                    [],
+                ):
+
+                    raw_name = (student.get("name") or "").strip()
+
+                    if not raw_name:
+                        continue
+
+                    key = str(
+                        student.get("Id")
+                        or student.get("studentno")
+                        or raw_name
+                    )
+
+                    entry = student_summary.setdefault(
+                        key,
+                        {
+                            "name": raw_name,
+                            "student_no": student.get("studentno"),
+                            "gr_no": student.get("grno"),
+                            "present_days": 0,
+                            "absent_days": 0,
+                            "tardy_days": 0,
+                            "total_days": 0,
+                        },
+                    )
+
+                    entry["total_days"] += 1
+
+                    normalized_status = (
+                        status or ""
+                    ).strip().lower()
+
+                    if normalized_status == "present":
+                        entry["present_days"] += 1
+                    elif normalized_status == "absent":
+                        entry["absent_days"] += 1
+                    elif normalized_status in [
+                        "late",
+                        "tardy",
+                    ]:
+                        entry["tardy_days"] += 1
+
+        except Exception as e:
+
+            print(
+                f"Class summary error on {date_text}: {e}"
+            )
+
+        current_date += timedelta(
+            days=1
+        )
+
+    students = []
+
+    for entry in student_summary.values():
+
+        total_days = entry["total_days"]
+        percentage = None
+
+        if total_days > 0:
+            percentage = (
+                entry["present_days"] / total_days
+            ) * 100
+
+        students.append({
+            "name": entry["name"],
+            "student_no": entry["student_no"],
+            "gr_no": entry["gr_no"],
+            "total_school_days": total_days,
+            "present_days": entry["present_days"],
+            "absent_days": entry["absent_days"],
+            "tardy_days": entry["tardy_days"],
+            "attendance_percentage": (
+                round(percentage, 2)
+                if percentage is not None
+                else None
+            ),
+        })
+
+    students.sort(
+        key=lambda item: item["name"].lower()
+    )
+
+    return {
+        "success": True,
+        "class": course_name,
+        "section": section_name,
+        "start_date": start_date,
+        "end_date": end_date,
+        "school_days": school_days,
+        "total_students": len(students),
+        "students": students,
+    }
+
+
+# =========================================================
 # STUDENT ATTENDANCE
 # =========================================================
 
