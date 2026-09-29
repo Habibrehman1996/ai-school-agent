@@ -1,8 +1,9 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 import streamlit as st
 
-from agent import agent, get_final_text
+from agent import build_agent, get_final_text
 
 
 st.set_page_config(
@@ -12,15 +13,34 @@ st.set_page_config(
 )
 
 
+def _run_in_fresh_loop(coro_factory):
+    """
+    Streamlit reruns can trigger multiple async agent calls across the app
+    lifecycle. Each call must own its own event loop; do not reuse a loop
+    that may already be closed by a previous rerun or async client session.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro_factory())
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(asyncio.run, coro_factory())
+        return future.result()
+
+
 def chat_response(messages):
-    response = asyncio.run(
-        agent.ainvoke(
+    agent = build_agent()
+
+    async def _invoke_agent():
+        response = await agent.ainvoke(
             {"messages": messages},
             config={"recursion_limit": 6},
         )
-    )
-    final_message = response["messages"][-1]
-    return get_final_text(final_message.content)
+        final_message = response["messages"][-1]
+        return get_final_text(final_message.content)
+
+    return _run_in_fresh_loop(_invoke_agent)
 
 
 if "messages" not in st.session_state:

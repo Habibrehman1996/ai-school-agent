@@ -16,12 +16,13 @@ TODAY = date.today().strftime("%d %B %Y")
 # AI SCHOOL AGENT
 # =========================================================
 
-agent = create_agent(
-    model="google_genai:gemini-flash-lite-latest",
+def build_agent():
+    return create_agent(
+        model="google_genai:gemini-flash-lite-latest",
 
-    tools=tools,
+        tools=tools,
 
-    system_prompt=f"""
+        system_prompt=f"""
 You are an AI School Operations Assistant connected
 to the school's EDAP system.
 
@@ -150,7 +151,10 @@ Use the correct tool.
 Do not guess.
 Do not invent.
 """
-)
+    )
+
+
+agent = build_agent()
 
 
 # =========================================================
