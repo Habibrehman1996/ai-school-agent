@@ -204,7 +204,7 @@ async def main():
 
         try:
 
-            print("AI is processing...")
+            print("DEBUG 1: Sending request to Gemini...")
 
             response = await agent.ainvoke(
                 {
@@ -219,7 +219,7 @@ async def main():
                     "recursion_limit": 6
                 }
             )
-
+            print("DEBUG 2: Gemini/Agent response received!")
             final_message = response["messages"][-1]
 
             answer = get_final_text(

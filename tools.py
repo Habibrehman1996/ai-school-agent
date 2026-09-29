@@ -120,6 +120,13 @@ async def get_student_details_tool(
     Use this tool when authorized school staff
     asks for a student's details.
     """
+    print(
+    f"DEBUG DETAILS TOOL: "
+    f"student={student_name}, "
+    f"class={course_name}, "
+    f"section={section_name}, "
+    f"date={date_text}"
+)
 
     return await get_student_details(
         student_name=student_name,
